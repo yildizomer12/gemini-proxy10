@@ -4,7 +4,6 @@ import time
 import json
 import asyncio
 import logging
-import threading
 import re
 import base64
 from typing import List, Dict, Any, Union, Optional, Tuple
@@ -15,7 +14,6 @@ import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import Part
 from google.api_core.exceptions import GoogleAPIError
 import httpx
-import keyboard  # For keyboard shortcut handling
 
 # Debug flag to toggle detailed logging
 DEBUG_ENABLED = False
@@ -347,20 +345,6 @@ async def make_gemini_request(api_key: str, proxy: Optional[str], messages: List
         logger.error("Error making Gemini request: %s", str(e))
         raise
 
-def start_keyboard_listener():
-    """Start listening for Alt+number shortcuts to switch models."""
-    def on_key_event(e):
-        if e.event_type == keyboard.KEY_DOWN and e.name in ["1", "2", "3"] and keyboard.is_pressed("alt"):
-            index = int(e.name) - 1
-            models = list(proxy_manager.allowed_models)
-            if index < len(models):
-                logger.info("Keyboard shortcut: Available model %d: %s", index + 1, models[index])
-
-    try:
-        keyboard.hook(on_key_event)
-        logger.info("Started keyboard listener for model information (Alt+1, Alt+2, etc.)")
-    except Exception as e:
-        logger.warning("Could not start keyboard listener: %s", e)
 
 @app.get("/v1/models")
 async def list_models():
@@ -466,9 +450,6 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    # Start keyboard listener in a separate thread
-    keyboard_thread = threading.Thread(target=start_keyboard_listener, daemon=True)
-    keyboard_thread.start()
     
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
